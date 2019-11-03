@@ -1,0 +1,8 @@
+#PTV API Help: https://www.ptv.vic.gov.au/footer/data-and-reporting/datasets/ptv-timetable-api/
+ptv_devid = youllneedyourowndevid
+ptv_key = 'youllneedyourownapikey'
+stop = '1087' #Hartwell Station - train stop to use for PTV API
+#Darksky API Help: https://darksky.net/dev
+lat_coord = -37.000
+lon_coord = 145.000
+darksky_apiid = 'youllneedyourownapikey'

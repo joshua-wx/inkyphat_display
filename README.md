@@ -1,0 +1,13 @@
+This script using the PTV API and the DarkSky API to create a display for the
+inkphat display that shows the next 3 trains and the forecast weather. Helps
+you to decide when to leave for the trian (and if it's late) and if you'll need
+an umbrella or hat!
+
+Inkyphat display: https://shop.pimoroni.com/products/inky-phat?variant=12549254217811
+PTV API: https://www.ptv.vic.gov.au/footer/data-and-reporting/datasets/ptv-timetable-api/
+Darksky API: https://darksky.net/dev
+
+To run, config the myconfig.example file and rename myconfig.py 
+You'll also need to register for PTV and Darksky API keys
+
+You can use crontab to run the script every 10minutes or as needed :)
