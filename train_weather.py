@@ -56,7 +56,7 @@ def get_ptv():
 	
 	#build url with signatures
 	api_args['devid'] = myconfig.ptv_devid
-	call = preamble + apibase + myconfig.stop + "?" + urllib.urlencode(api_args)
+	call = preamble + apibase + myconfig.stop + "?" + urllib.parse.urlencode(api_args)
 	sig  = hmac.new(str.encode(myconfig.ptv_key), str.encode(call), hashlib.sha1).hexdigest().upper()
 	url  = ptvbase + call + "&signature=" + sig
 	#request
