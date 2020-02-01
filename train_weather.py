@@ -56,7 +56,7 @@ def get_ptv():
 	
 	#build url with signatures
 	api_args['devid'] = myconfig.ptv_devid
-	call = preamble + apibase + myconfig.stop + "?" + urllib.parse.urlencode(api_args)
+	call = preamble + apibase + myconfig.stop + "?" + urllib.urlencode(api_args)
 	sig  = hmac.new(str.encode(myconfig.ptv_key), str.encode(call), hashlib.sha1).hexdigest().upper()
 	url  = ptvbase + call + "&signature=" + sig
 	#request
@@ -130,7 +130,7 @@ from PIL import Image, ImageFont
 inkyphat.set_colour('yellow')
 inkyphat.set_border(inkyphat.BLACK)
 inkyphat.set_rotation(180)
-inkyphat.set_image(Image.open("/home/pi/train_clouds.png"))
+inkyphat.set_image(Image.open("/home/pi/inky_display/train_clouds.png"))
 inkyphat.line((7, 27, 203, 27)) #horizontal top line
 inkyphat.line((133, 29, 133, 96)) #vertical top line
 
