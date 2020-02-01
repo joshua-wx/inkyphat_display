@@ -210,15 +210,23 @@ inkyphat.text((90, 90), 'Soil Moisture: ' + str(moisture_value) + '%',  inkyphat
 # And show it!
 inkyphat.show()
 
+#####################################
 #moisture alarm LED
+#####################################
+
 #LED config
+#gentle warning
 water_now_val = 50
 water_now_flash_hz = 2
-
+#emergency warning
 water_emergency_val = 35
-water_emergency_flash_hz = 4
-
+water_emergency_flash_hz = 8
+#total time
 total_time_sec = 540
+#initalise LED
+GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
+GPIO.setup(18,GPIO.OUT)
 
 #call loop if needed
 if moisture_value == -99:
