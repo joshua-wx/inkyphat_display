@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
+import uuid
 import time
 import json
 import urllib
@@ -50,15 +52,14 @@ def get_moisture():
 	return val_perc
 
 #LED flash loop
-def flash_loop(flash_hz, total_time):
+def flash_loop(flash_hz, flag_ffn):
 		if flash_hz == 0:
 			#error mode: always on
 		    GPIO.output(18,GPIO.HIGH)
 		else:
-			#warning mode
+		    #warning mode
 		    flash_time = 1/flash_hz
-		    flash_loop_range = int(flash_hz*total_time/2)
-		    for i in range(flash_loop_range):
+		    while os.path.isfile(flag_ffn):
 		            GPIO.output(18,GPIO.HIGH)
 		            time.sleep(flash_time)
 		            GPIO.output(18,GPIO.LOW)
@@ -216,23 +217,32 @@ inkyphat.show()
 
 #LED config
 #gentle warning
-water_now_val = 50
+water_now_val = 65
 water_now_flash_hz = 2
 #emergency warning
-water_emergency_val = 35
+water_emergency_val = 50
 water_emergency_flash_hz = 8
-#total time
-total_time_sec = 540
+
+#remove other flags (killing flash process)
+os.system('rm /home/pi/inky_display/*.flag')
+#create unique flag file and remove others
+flag_ffn = '/home/pi/inky_display/' + str(uuid.uuid4()) + '.flag'
+os.system('touch ' + flag_ffn)
+print(flag_ffn)
+
 #initalise LED
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
 GPIO.setup(18,GPIO.OUT)
+GPIO.output(18,GPIO.LOW)
+
+print(moisture_value)
 
 #call loop if needed
 if moisture_value == -99:
-	flash_loop(0, total_time_sec)
+	flash_loop(0, flag_ffn)
 if moisture_value < water_emergency_val:
-	flash_loop(water_emergency_flash_hz, total_time_sec)
+	flash_loop(water_emergency_flash_hz, flag_ffn)
 elif moisture_value < water_now_val:
-	flash_loop(water_now_flash_hz, total_time_sec)
+	flash_loop(water_now_flash_hz, flag_ffn)
 
