@@ -14,18 +14,14 @@ import numpy as np
 #GPIO for LED
 import RPi.GPIO as GPIO
 import myconfig
-#I2C bus
-import board
-import busio
-#load libraries for ADC
-import adafruit_ads1x15.ads1115 as ADS
-from adafruit_ads1x15.analog_in import AnalogIn
+
+from font_fredoka_one import FredokaOne
 
 """
 This script using the PTV API and the DarkSky API to create a display for the
 inkphat display that shows the next 3 trains and the forecast weather. Helps
 you to decide when to leave for the trian (and if it's late) and if you'll need
-an umbrella or hat! Also now includes a soil moisture reading from an ADC :)
+an umbrella or hat!
 
 Inkyphat display: https://shop.pimoroni.com/products/inky-phat?variant=12549254217811
 PTV API: https://www.ptv.vic.gov.au/footer/data-and-reporting/datasets/ptv-timetable-api/
@@ -36,34 +32,6 @@ You'll also need to register for PTV and Darksky API keys
 
 You can use crontab to run the script every 10minutes or as needed :)
 """
-
-def get_moisture():
-	#initalise I2C bus
-	i2c = busio.I2C(board.SCL, board.SDA)
-	#initalise ADC
-	ads = ADS.ADS1115(i2c)
-	
-	#read channel 0
-	chan = AnalogIn(ads, ADS.P0)
-	#get value as a precentage
-	max_val = 21827
-	val_perc = round(chan.value/max_val*100)
-	
-	return val_perc
-
-#LED flash loop
-def flash_loop(flash_hz, flag_ffn):
-		if flash_hz == 0:
-			#error mode: always on
-		    GPIO.output(18,GPIO.HIGH)
-		else:
-		    #warning mode
-		    flash_time = 1/flash_hz
-		    while os.path.isfile(flag_ffn):
-		            GPIO.output(18,GPIO.HIGH)
-		            time.sleep(flash_time)
-		            GPIO.output(18,GPIO.LOW)
-		            time.sleep(flash_time)
 
 def get_weather():
 	"""
@@ -111,12 +79,6 @@ def get_ptv():
 # Build datasets from API calls
 #########################################################
 
-#get mosisture value
-try:
-	moisture_value = get_moisture()
-except:
-	moisture_value = -99
-
 #process weather
 forecast_steps = [1,3,6]
 weather = get_weather()
@@ -148,7 +110,7 @@ for i in forecast_steps:
 	else:
 		rain = ''
 	rain_list.append(rain)
-wx_labels = ['LTS',u' °C',' %','mm']
+wx_labels = ['LTS',u' °C','c%','mm']
 
 
 #process ptv
@@ -169,20 +131,22 @@ for i in range(len(train)):
 # Build inkyphat display
 #########################################################
 
-import inkyphat
-from PIL import Image, ImageFont
+import inky
+from inky.auto import auto
+from PIL import Image, ImageFont, ImageDraw
 
-inkyphat.set_colour('yellow')
-inkyphat.set_border(inkyphat.BLACK)
-inkyphat.set_rotation(180)
-inkyphat.set_image(Image.open("/home/pi/inky_display/clouds.png"))
-inkyphat.line((7, 27, 203, 27)) #horizontal top line
-inkyphat.line((133, 29, 133, 96)) #vertical top line
+inky_disp = auto(ask_user=True, verbose=True)
+inky_disp.set_border(inky.BLACK)
+
+img = Image.open("/home/pi/inky_display/clouds.png")
+draw = ImageDraw.Draw(img)
+draw.line((7, 27, 203, 27)) #horizontal top line
+draw.line((133, 29, 133, 96)) #vertical top line
 
 
-data_font  = ImageFont.truetype(inkyphat.fonts.FredokaOne, 16)
-label_font = ImageFont.truetype(inkyphat.fonts.FredokaOne, 14)
-moisture_font = ImageFont.truetype(inkyphat.fonts.FredokaOne, 12)
+data_font  = ImageFont.truetype(FredokaOne, 16)
+label_font = ImageFont.truetype(FredokaOne, 14)
+
 #set data plotting config
 wx_col_loc    = [10,40,70,100]
 ptv_col_loc   = 140
@@ -190,59 +154,22 @@ data_row_loc  = [30,50,70]
 label_row_loc = 10
 #plot data
 for i, row_loc in enumerate(data_row_loc):
-	inkyphat.text((wx_col_loc[0], row_loc), time_list[i],  inkyphat.BLACK, font=data_font)
-	inkyphat.text((wx_col_loc[1], row_loc), temp_list[i],  inkyphat.BLACK, font=data_font)
-	inkyphat.text((wx_col_loc[2], row_loc), cloud_list[i], inkyphat.BLACK, font=data_font)
-	inkyphat.text((wx_col_loc[3], row_loc), rain_list[i],  inkyphat.BLACK, font=data_font)
+	draw.text((wx_col_loc[0], row_loc), time_list[i],  inky.BLACK, font=data_font)
+	draw.text((wx_col_loc[1], row_loc), temp_list[i],  inky.BLACK, font=data_font)
+	draw.text((wx_col_loc[2], row_loc), cloud_list[i], inky.BLACK, font=data_font)
+	draw.text((wx_col_loc[3], row_loc), rain_list[i],  inky.BLACK, font=data_font)
 for i, row_loc in enumerate(data_row_loc):
 	try:
-		inkyphat.text((ptv_col_loc, row_loc), departures_list[i],  inkyphat.BLACK, font=data_font)
+		draw.text((ptv_col_loc, row_loc), departures_list[i],  inky.BLACK, font=data_font)
 	except:
 		print('failure on inkphat text ptv')
 		continue
 #plot labels
 for i, col_loc in enumerate(wx_col_loc):
-	inkyphat.text((col_loc, label_row_loc), wx_labels[i],  inkyphat.BLACK, font=label_font)
-inkyphat.text((ptv_col_loc, label_row_loc), '   Train',  inkyphat.BLACK, font=label_font)
-
-#moisture value
-inkyphat.text((90, 90), 'Soil Moisture: ' + str(moisture_value) + '%',  inkyphat.BLACK, font=moisture_font)
+	draw.text((col_loc, label_row_loc), wx_labels[i],  inky.BLACK, font=label_font)
+draw.text((ptv_col_loc, label_row_loc), '   Train',  inky.BLACK, font=label_font)
 
 # And show it!
-inkyphat.show()
-
-#####################################
-#moisture alarm LED
-#####################################
-
-#LED config
-#gentle warning
-water_now_val = 65
-water_now_flash_hz = 2
-#emergency warning
-water_emergency_val = 50
-water_emergency_flash_hz = 8
-
-#remove other flags (killing flash process)
-os.system('rm /home/pi/inky_display/*.flag')
-#create unique flag file and remove others
-flag_ffn = '/home/pi/inky_display/' + str(uuid.uuid4()) + '.flag'
-os.system('touch ' + flag_ffn)
-print(flag_ffn)
-
-#initalise LED
-GPIO.setmode(GPIO.BCM)
-GPIO.setwarnings(False)
-GPIO.setup(18,GPIO.OUT)
-GPIO.output(18,GPIO.LOW)
-
-print(moisture_value)
-
-#call loop if needed
-if moisture_value == -99:
-	flash_loop(0, flag_ffn)
-if moisture_value < water_emergency_val:
-	flash_loop(water_emergency_flash_hz, flag_ffn)
-elif moisture_value < water_now_val:
-	flash_loop(water_now_flash_hz, flag_ffn)
+inky_disp.set_image(img)
+inky_disp.show()
 
