@@ -14,8 +14,8 @@ import numpy as np
 #GPIO for LED
 import RPi.GPIO as GPIO
 import myconfig
-
-from font_fredoka_one import FredokaOne
+#temp sensor
+import bme680
 
 """
 This script using the PTV API and the DarkSky API to create a display for the
@@ -74,7 +74,33 @@ def get_ptv():
 		json_data = json_data['departures']
 		return json_data
 	return {}
+	
+def query_bme():
+	"""
+	Query BME sensor for meteorological information
+	#https://github.com/pimoroni/bme680-python/blob/master/examples/temperature-pressure-humidity.py
+	"""
+	try:
+		sensor = bme680.BME680(bme680.I2C_ADDR_PRIMARY)
+	except (RuntimeError, IOError):
+		sensor = bme680.BME680(bme680.I2C_ADDR_SECONDARY)
+	
+	# These oversampling settings can be tweaked to
+	# change the balance between accuracy and noise in
+	# the data.
 
+	sensor.set_humidity_oversample(bme680.OS_2X)
+	sensor.set_pressure_oversample(bme680.OS_4X)
+	sensor.set_temperature_oversample(bme680.OS_8X)
+	sensor.set_filter(bme680.FILTER_SIZE_3)
+	
+	while True:
+		if sensor.get_sensor_data():
+			temp = sensor.data.temperature
+			pres = round(sensor.data.pressure)
+			rh = round(sensor.data.humidity)
+			break
+	return temp, rh, pres
 #########################################################
 # Build datasets from API calls
 #########################################################
@@ -134,24 +160,28 @@ for i in range(len(train)):
 import inky
 from inky.auto import auto
 from PIL import Image, ImageFont, ImageDraw
+from font_fredoka_one import FredokaOne
 
 inky_disp = auto(ask_user=True, verbose=True)
 inky_disp.set_border(inky.BLACK)
+inky_disp.h_flip = True
+inky_disp.v_flip = True
 
 img = Image.open("/home/pi/inky_display/clouds.png")
 draw = ImageDraw.Draw(img)
-draw.line((7, 27, 203, 27)) #horizontal top line
-draw.line((133, 29, 133, 96)) #vertical top line
-
+draw.line((7, 17, 203, 17)) #top horizontal top line
+draw.line((133, 17, 133, 80)) #vertical top line
+draw.line((7, 80, 203, 80)) #bottom horizontal top line
 
 data_font  = ImageFont.truetype(FredokaOne, 16)
 label_font = ImageFont.truetype(FredokaOne, 14)
+bme_font = ImageFont.truetype(FredokaOne, 14)
 
 #set data plotting config
 wx_col_loc    = [10,40,70,100]
 ptv_col_loc   = 140
-data_row_loc  = [30,50,70]
-label_row_loc = 10
+data_row_loc  = [20,40,60]
+label_row_loc = 0
 #plot data
 for i, row_loc in enumerate(data_row_loc):
 	draw.text((wx_col_loc[0], row_loc), time_list[i],  inky.BLACK, font=data_font)
@@ -168,6 +198,11 @@ for i, row_loc in enumerate(data_row_loc):
 for i, col_loc in enumerate(wx_col_loc):
 	draw.text((col_loc, label_row_loc), wx_labels[i],  inky.BLACK, font=label_font)
 draw.text((ptv_col_loc, label_row_loc), '   Train',  inky.BLACK, font=label_font)
+
+#met data
+temp, rh, pres = query_bme()
+met_text = f'T: {temp:.1f}°C, RH: {rh}%, P:{pres}hPa'
+draw.text((10, 82), met_text,  inky.BLACK, font=bme_font)
 
 # And show it!
 inky_disp.set_image(img)
