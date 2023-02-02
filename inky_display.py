@@ -201,7 +201,7 @@ draw.text((ptv_col_loc, label_row_loc), '   Train',  inky.BLACK, font=label_font
 
 #met data
 temp, rh, pres = query_bme()
-met_text = f'T: {temp:.1f}°C, RH: {rh}%, P:{pres}hPa'
+met_text = f'T: {temp:.1f}°C RH: {rh}% P: {pres}hPa'
 draw.text((10, 82), met_text,  inky.BLACK, font=bme_font)
 
 # And show it!
